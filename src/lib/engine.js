@@ -11,8 +11,8 @@
 import { ballLine, milestoneLine, sysForBall } from './commentary.js';
 
 export const SHOT_MS = 10000; // anti-AFK shot clock per ball
-export const REVEAL_MS = 3000; // 3-2-1 countdown (1800) + result on screen
-export const COUNTDOWN_MS = 1800;
+export const REVEAL_MS = 2400; // 3-2-1 countdown (1500) + result on screen
+export const COUNTDOWN_MS = 1500; // the next ball can be picked as soon as this ends
 export const GRACE_MS = 3000; // extra wait before the host forces a timed-out ball
 export const BALLS_PER_OVER = 6;
 
