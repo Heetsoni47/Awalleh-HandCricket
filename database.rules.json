@@ -1,0 +1,74 @@
+{
+  "rules": {
+    "rooms": {
+      "$code": {
+        "meta": {
+          ".read": "auth != null",
+          ".write": "auth != null && (!data.exists() || data.child('hostUid').val() === auth.uid)",
+          "hostUid": {
+            ".validate": "!data.exists() || data.val() === newData.val()"
+          }
+        },
+        "settings": {
+          ".read": "auth != null",
+          ".write": "auth != null && newData.parent().child('meta/hostUid').val() === auth.uid"
+        },
+        "players": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && (auth.uid === $uid || root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid)"
+          }
+        },
+        "teams": {
+          ".read": "auth != null",
+          ".write": "auth != null && newData.parent().child('players/' + auth.uid).exists()"
+        },
+        "game": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms/' + $code + '/players/' + auth.uid).exists()"
+        },
+        "ball": {
+          ".read": "auth != null",
+          "$seq": {
+            ".write": "auth != null && !newData.exists() && root.child('rooms/' + $code + '/players/' + auth.uid).exists()",
+            "commit": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid && !data.exists()",
+                ".validate": "newData.isString() && newData.val().length === 64"
+              }
+            },
+            "reveal": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid && !data.exists()"
+              }
+            }
+          },
+          ".write": "auth != null && !newData.exists() && root.child('rooms/' + $code + '/players/' + auth.uid).exists()"
+        },
+        "chat": {
+          "all": {
+            ".read": "auth != null",
+            "$msg": {
+              ".write": "auth != null && !data.exists() && root.child('rooms/' + $code + '/players/' + auth.uid).exists()",
+              ".validate": "newData.hasChildren(['text', 'timestamp']) && newData.child('text').isString() && newData.child('text').val().length <= 400"
+            }
+          },
+          "$team": {
+            ".read": "auth != null && root.child('rooms/' + $code + '/players/' + auth.uid + '/team').val() === $team",
+            "$msg": {
+              ".write": "auth != null && !data.exists() && root.child('rooms/' + $code + '/players/' + auth.uid + '/team').val() === $team",
+              ".validate": "newData.hasChildren(['text', 'timestamp']) && newData.child('text').isString() && newData.child('text').val().length <= 400"
+            }
+          }
+        },
+        "reactions": {
+          ".read": "auth != null",
+          "$id": {
+            ".write": "auth != null && root.child('rooms/' + $code + '/players/' + auth.uid).exists() && (!data.exists() || data.child('uid').val() === auth.uid)"
+          },
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid && !newData.exists()"
+        }
+      }
+    }
+  }
+}
