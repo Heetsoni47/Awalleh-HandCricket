@@ -35,6 +35,7 @@ export function normalize(g) {
   g.toss.throws = g.toss.throws || {};
   g.names = g.names || {};
   g.mvp = g.mvp || {};
+  g.bots = g.bots || [];
   for (const t of ['A', 'B']) {
     g.teams[t].players = g.teams[t].players || [];
   }
@@ -75,7 +76,14 @@ export function createGame({ room, now, prev }) {
   const A = byTeam('A');
   const B = byTeam('B');
   const teams = room.teams || {};
-  const cap = (t, list) => (list.includes(teams[t]?.captain) ? teams[t].captain : list[0]);
+  const bots = Object.entries(players).filter(([, p]) => p.bot).map(([uid]) => uid);
+  // a human captains whenever the team has one; a bot only captains an all-bot team
+  const cap = (t, list) => {
+    const humans = list.filter((u) => !bots.includes(u));
+    const chosen = teams[t]?.captain;
+    if (list.includes(chosen) && (!bots.includes(chosen) || humans.length === 0)) return chosen;
+    return humans[0] || list[0];
+  };
 
   const g = {
     phase: 'toss',
@@ -87,6 +95,7 @@ export function createGame({ room, now, prev }) {
       B: { name: teams.B?.name || 'Team B', captain: cap('B', B), players: B },
     },
     names,
+    bots,
     series: prev ? sanitize(prev.series) : { A: 0, B: 0, T: 0, results: [], mvp: {} },
     toss: { call: null, throws: {}, winner: null, decision: null, sum: null },
     innings: [],
@@ -488,5 +497,64 @@ export function displayInnings(g, now) {
 export function myTeam(g, uid) {
   if (g.teams.A.players.includes(uid)) return 'A';
   if (g.teams.B.players.includes(uid)) return 'B';
+  return null;
+}
+
+// --------------------------------------------------------------------------- bots
+
+export const isBot = (g, uid) => !!uid && (g.bots || []).includes(uid);
+
+/** Picks a bot makes, from what it has seen of its opponent so far (never from the current hidden pick) */
+export function botPick(g, role, opponent) {
+  const r = () => 1 + Math.floor(Math.random() * 6);
+  const seen = [];
+  g.innings.forEach((inn) =>
+    inn.log.forEach((x) => {
+      if (role === 'bowl' && x.bt === opponent) seen.push(x.b);
+      if (role === 'bat' && x.bw === opponent) seen.push(x.w);
+    }),
+  );
+  const recent = seen.slice(-12);
+  const counts = [0, 0, 0, 0, 0, 0, 0];
+  recent.forEach((n) => (counts[n] += 1));
+  const fav = recent.length >= 3 ? counts.indexOf(Math.max(...counts.slice(1))) : null;
+  if (role === 'bowl') {
+    // bowler hunts the batter's favourite number some of the time
+    return fav && Math.random() < 0.3 ? fav : r();
+  }
+  // batter swings big more often, and dodges the bowler's favourite number
+  for (let i = 0; i < 4; i++) {
+    const n = Math.random() < 0.35 ? (Math.random() < 0.6 ? 6 : 4) : r();
+    if (n !== fav || Math.random() < 0.2) return n;
+  }
+  return r();
+}
+
+/**
+ * Captain decisions for bot-captained teams (toss, batting order, bowler).
+ * Returns the updated game, or null when nothing is waiting on a bot.
+ */
+export function botActions(g, now) {
+  const capIsBot = (t) => isBot(g, g.teams[t].captain);
+  if (g.phase === 'toss') {
+    if (!g.toss.call) return capIsBot('A') ? tossCall(g, Math.random() < 0.5 ? 'odd' : 'even') : null;
+    for (const t of ['A', 'B']) {
+      if (!g.toss.throws[t] && !g.toss.winner && capIsBot(t)) return tossThrow(g, t, 1 + Math.floor(Math.random() * 6));
+    }
+    if (g.toss.winner && !g.toss.decision && capIsBot(g.toss.winner)) return tossDecide(g, Math.random() < 0.5 ? 'bat' : 'bowl', now);
+    return null;
+  }
+  if (g.phase === 'setup') {
+    const inn = g.innings[g.cur];
+    if (!inn.order && capIsBot(inn.bat)) {
+      const team = [...g.teams[inn.bat].players];
+      return setOrder(g, inn.super ? [team[Math.floor(Math.random() * team.length)]] : team, now);
+    }
+    if (!inn.bowler && capIsBot(inn.bowl)) {
+      const team = g.teams[inn.bowl].players;
+      const options = team.length > 1 ? team.filter((u) => u !== inn.lastBowler) : team;
+      return setBowler(g, options[Math.floor(Math.random() * options.length)], now);
+    }
+  }
   return null;
 }

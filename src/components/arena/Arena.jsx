@@ -3,7 +3,8 @@ import { Timer } from 'lucide-react';
 import { useRoom } from '../../context/RoomContext.jsx';
 import { useNow } from '../../hooks/useNow.js';
 import { useBallEngine } from '../../hooks/useBallEngine.js';
-import { COUNTDOWN_MS, REVEAL_MS, displayInnings, myTeam, oversStr } from '../../lib/engine.js';
+import { COUNTDOWN_MS, REVEAL_MS, botActions, displayInnings, isBot, myTeam, oversStr } from '../../lib/engine.js';
+import { gameTx } from '../../lib/rooms.js';
 import { sfx } from '../../lib/sounds.js';
 import { Card, TeamDot, cx } from '../ui.jsx';
 import PlayerChip from '../players/PlayerChip.jsx';
@@ -67,7 +68,7 @@ function Roster({ game, uid, inn }) {
                   : inn.bowler === u
                     ? 'bowling'
                     : '';
-              return <PlayerChip key={u} uid={u} name={game.names[u]} me={uid} captain={game.teams[t].captain === u} meta={meta} dense />;
+              return <PlayerChip key={u} uid={u} name={game.names[u]} me={uid} captain={game.teams[t].captain === u} bot={isBot(game, u)} meta={meta} dense />;
             })}
           </div>
         );
@@ -94,6 +95,20 @@ export default function Arena() {
       sfx.tick();
     }
   }, [secondsLeft, engine.role, engine.myPick]);
+
+  // Bot captains: toss calls, batting order and bowler changes (run by the room authority)
+  const botStamp = useRef(null);
+  useEffect(() => {
+    if (!isAuthority || !game.bots?.length || (game.phase !== 'toss' && game.phase !== 'setup')) return undefined;
+    const cur = game.innings[game.cur];
+    const stamp = JSON.stringify([game.startedAt, game.phase, game.toss, game.cur, cur?.order, cur?.bowler, cur?.balls]);
+    if (botStamp.current === stamp) return undefined;
+    const t = setTimeout(() => {
+      botStamp.current = stamp;
+      gameTx(code, (g, now) => botActions(g, now));
+    }, 900);
+    return () => clearTimeout(t);
+  }, [game, isAuthority, code]);
 
   if (game.phase === 'toss') {
     return (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Check, Copy, Crown, Eye, Shuffle, ArrowRightLeft, Play } from 'lucide-react';
+import { Check, Copy, Crown, Eye, Shuffle, ArrowRightLeft, Play, Bot, Trash2 } from 'lucide-react';
 import { useRoom } from '../../context/RoomContext.jsx';
-import { autoBalance, canStart, setCaptain, setTeam, setTeamName, startMatch, updateSettings } from '../../lib/rooms.js';
+import { addBot, autoBalance, canStart, removeBot, setCaptain, setTeam, setTeamName, startMatch, updateSettings } from '../../lib/rooms.js';
 import { Button, Card, Input, Seg, TeamDot, Tile, cx } from '../ui.jsx';
 import PlayerChip from '../players/PlayerChip.jsx';
 
@@ -75,6 +75,7 @@ export default function Lobby() {
   function hostActions(u, p) {
     if (!isHost) return [];
     const a = [];
+    if (p.bot) a.push({ label: 'Remove bot', icon: Trash2, onClick: run(() => removeBot(code, room, u)) });
     if (p.team !== 'spec' && teams[p.team]?.captain !== u) a.push({ label: 'Make captain', icon: Crown, onClick: run(() => setCaptain(code, p.team, u)) });
     ['A', 'B'].forEach((t) => p.team !== t && a.push({ label: `Move to ${teams[t]?.name || `Team ${t}`}`, icon: ArrowRightLeft, onClick: run(() => setTeam(code, room, u, t)) }));
     if (p.team !== 'spec') a.push({ label: 'Move to spectators', icon: Eye, onClick: run(() => setTeam(code, room, u, 'spec')) });
@@ -126,16 +127,24 @@ export default function Lobby() {
                     captain={captain === u}
                     host={meta.hostUid === u}
                     offline={p.online === false}
+                    bot={p.bot}
                     actions={hostActions(u, p)}
                   />
                 ))}
                 {members.length === 0 && <p className="px-3 py-3 text-[13px] text-fg3">Nobody yet</p>}
               </div>
-              {!mine && (
-                <Button size="sm" className="mt-3 w-full" disabled={full} onClick={run(() => setTeam(code, room, uid, t))}>
-                  {full ? 'Team full' : `Join ${teams[t]?.name || `Team ${t}`}`}
-                </Button>
-              )}
+              <div className="mt-3 flex gap-2">
+                {!mine && (
+                  <Button size="sm" className="flex-1" disabled={full} onClick={run(() => setTeam(code, room, uid, t))}>
+                    {full ? 'Team full' : `Join ${teams[t]?.name || `Team ${t}`}`}
+                  </Button>
+                )}
+                {isHost && !full && (
+                  <Button size="sm" variant="ghost" className={mine ? 'flex-1 justify-start' : ''} onClick={run(() => addBot(code, room, t))}>
+                    <Bot size={16} strokeWidth={1.5} /> Add bot
+                  </Button>
+                )}
+              </div>
             </Card>
           );
         })}

@@ -120,6 +120,46 @@ export async function autoBalance(code, room) {
   await update(roomRef(code), updates);
 }
 
+// --------------------------------------------------------------------------- bots
+
+const BOT_NAMES = ['Yorker Bot', 'Googly Bot', 'Bouncer Bot', 'Spin Bot', 'Swing Bot', 'Doosra Bot', 'Slog Bot', 'Seam Bot', 'Flipper Bot', 'Helicopter Bot'];
+
+/** Host adds a computer player to a team. Bots play on the host's device. */
+export async function addBot(code, room, team) {
+  const players = room.players || {};
+  const size = room.settings.teamSize;
+  if (Object.values(players).filter((p) => p.team === team).length >= size) throw new Error('That team is full');
+  const used = new Set(Object.values(players).map((p) => p.name));
+  const name = BOT_NAMES.find((n) => !used.has(n)) || `Bot ${Object.keys(players).length + 1}`;
+  const uid = `bot_${Math.random().toString(36).slice(2, 10)}`;
+  const updates = { [`players/${uid}`]: { name, team, joinedAt: serverNow(), online: true, bot: true } };
+  if (!room.teams?.[team]?.captain) updates[`teams/${team}/captain`] = uid;
+  await update(roomRef(code), updates);
+}
+
+export async function removeBot(code, room, uid) {
+  const p = room.players?.[uid];
+  if (!p?.bot) return;
+  const updates = { [`players/${uid}`]: null };
+  if (room.teams?.[p.team]?.captain === uid) {
+    updates[`teams/${p.team}/captain`] = Object.entries(room.players).find(([u, q]) => u !== uid && q.team === p.team && !q.bot)?.[0]
+      || Object.entries(room.players).find(([u, q]) => u !== uid && q.team === p.team)?.[0] || null;
+  }
+  await update(roomRef(code), updates);
+}
+
+/** Solo practice: a 1v1 room against a bot, ready to start */
+export async function createBotRoom(user) {
+  const code = await createRoom(user);
+  const botId = `bot_${Math.random().toString(36).slice(2, 10)}`;
+  await update(roomRef(code), {
+    [`players/${botId}`]: { name: 'Yorker Bot', team: 'B', joinedAt: serverNow(), online: true, bot: true },
+    'teams/A/name': user.username,
+    'teams/B': { name: 'Bots XI', captain: botId },
+  });
+  return code;
+}
+
 export const setCaptain = (code, team, uid) => update(roomRef(code, `teams/${team}`), { captain: uid });
 export const setTeamName = (code, team, name) => update(roomRef(code, `teams/${team}`), { name: name.slice(0, 24) });
 export const updateSettings = (code, patch) => update(roomRef(code, 'settings'), patch);

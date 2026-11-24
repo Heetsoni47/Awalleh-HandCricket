@@ -4,7 +4,7 @@ import { Crown, User, WifiOff } from 'lucide-react';
 import { Avatar, cx } from '../ui.jsx';
 
 /** Player row. Click opens a menu with the career link plus any host actions passed in. */
-export default function PlayerChip({ uid, name, me, captain, host, offline, meta, actions = [], dense }) {
+export default function PlayerChip({ uid, name, me, captain, host, offline, bot, meta, actions = [], dense }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -35,12 +35,15 @@ export default function PlayerChip({ uid, name, me, captain, host, offline, meta
         </span>
         {offline && <WifiOff size={14} strokeWidth={1.5} className="text-fg3" aria-label="Offline" />}
         {host && <span className="font-mono text-[11px] text-fg3">host</span>}
+        {bot && <span className="font-mono text-[11px] text-fg3">bot</span>}
       </button>
-      {open && (
+      {open && (!bot || actions.length > 0) && (
         <div className="absolute z-40 left-0 right-0 sm:right-auto sm:w-60 mt-1 rounded-xl bg-raised border border-line2 p-2 shadow-[0_12px_32px_rgba(0,0,0,0.45)] animate-pop">
-          <MenuItem as={Link} to={`/profile/${uid}`} icon={User}>
-            Career stats
-          </MenuItem>
+          {!bot && (
+            <MenuItem as={Link} to={`/profile/${uid}`} icon={User}>
+              Career stats
+            </MenuItem>
+          )}
           {actions.map((a) => (
             <MenuItem
               key={a.label}

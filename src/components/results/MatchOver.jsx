@@ -62,6 +62,7 @@ export default function MatchOver() {
         </div>
         <h1 className="mt-2 text-[32px] md:text-[44px] leading-[1.08] font-medium tracking-[-0.02em]">{game.result?.text}</h1>
         {series && <p className="mt-2 text-[15px] text-fg2">{series}</p>}
+        {game.bots?.length > 0 && <p className="mt-2 text-[13px] text-fg3">Practice match with bots. It shows in match history but doesn't change careers or leaderboards</p>}
       </div>
 
       {len > 1 && (
@@ -101,7 +102,7 @@ export default function MatchOver() {
       <div className="mt-6 grid md:grid-cols-[1.2fr_1fr] gap-4">
         <Card className="p-6 md:p-8 animate-rise">
           <div className="text-[13px] text-fg3">Player of the match</div>
-          <Link to={`/profile/${game.mom}`} className="mt-2 block text-[32px] leading-tight font-medium hover:text-accent transition-colors">
+          <Link to={String(game.mom).startsWith('bot_') ? '#' : `/profile/${game.mom}`} className="mt-2 block text-[32px] leading-tight font-medium hover:text-accent transition-colors">
             {game.names[game.mom]}
           </Link>
           <div className="mt-1 text-sm text-fg2 font-mono tabular-nums">{figures(game, game.mom)}</div>
@@ -173,7 +174,11 @@ export default function MatchOver() {
           </>
         ) : (
           <p className="text-[13px] text-fg3">
-            {[...game.teams.A.players, ...game.teams.B.players].includes(uid) ? 'Stats saved to your career. ' : ''}
+            {game.bots?.length
+              ? 'Practice match with bots, careers unchanged. '
+              : [...game.teams.A.players, ...game.teams.B.players].includes(uid)
+                ? 'Stats saved to your career. '
+                : ''}
             Waiting for the host
           </p>
         )}

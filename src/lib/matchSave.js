@@ -32,6 +32,7 @@ export async function saveMatchDoc(code, g) {
         B: { name: g.teams.B.name, players: g.teams.B.players, captain: g.teams.B.captain },
       },
       names: g.names,
+      bots: g.bots || [],
       result: g.result,
       mom: g.mom,
       mvp: g.mvp,
@@ -88,6 +89,7 @@ export async function applyMyLine(uid, id, line) {
 }
 
 export async function processGameForMe(code, g, uid) {
+  if (g.bots?.length) return false; // practice against bots doesn't touch careers
   const lines = matchLines(g);
   if (!lines[uid]) return false;
   return applyMyLine(uid, matchId(code, g), lines[uid]);
@@ -98,7 +100,7 @@ export async function syncPendingMatches(uid, processed = []) {
   try {
     const snap = await getDocs(query(collection(db, 'matches'), where('playerUids', 'array-contains', uid), limit(50)));
     for (const d of snap.docs) {
-      if (processed.includes(d.id)) continue;
+      if (processed.includes(d.id) || d.data().bots?.length) continue;
       await applyMyLine(uid, d.id, d.data().lines?.[uid]);
     }
   } catch (e) {

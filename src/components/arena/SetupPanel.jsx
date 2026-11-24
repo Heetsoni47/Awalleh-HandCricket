@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { gameTx } from '../../lib/rooms.js';
-import { setBowler, setOrder } from '../../lib/engine.js';
+import { isBot, setBowler, setOrder } from '../../lib/engine.js';
 import { Button, Card, cx } from '../ui.jsx';
 
 /** Batting order (start of innings) and bowler for the next over, set by captains */
@@ -32,7 +32,7 @@ export default function SetupPanel({ code, game, uid, isHost }) {
               </li>
             ))}
           </ol>
-        ) : batCap === uid || isHost ? (
+        ) : !isBot(game, batCap) && (batCap === uid || isHost) ? (
           <>
             <div className="mt-4 grid gap-1.5">
               {batPlayers.map((u) => {
@@ -71,7 +71,7 @@ export default function SetupPanel({ code, game, uid, isHost }) {
         </p>
         {inn.bowler ? (
           <p className="mt-4 text-sm">{names[inn.bowler]}</p>
-        ) : bowlCap === uid || isHost ? (
+        ) : !isBot(game, bowlCap) && (bowlCap === uid || isHost) ? (
           <div className="mt-4 grid gap-1.5">
             {teams[inn.bowl].players.map((u) => {
               const blocked = teams[inn.bowl].players.length > 1 && u === inn.lastBowler;

@@ -40,7 +40,7 @@ export function RoomProvider({ code, user, children }) {
     const me = room.players[user.uid] || null;
     const isHost = room.meta?.hostUid === user.uid;
     const online = Object.entries(room.players)
-      .filter(([, p]) => p.online !== false)
+      .filter(([, p]) => p.online !== false && !p.bot)
       .sort((a, b) => (a[1].team === 'spec') - (b[1].team === 'spec') || (a[1].joinedAt || 0) - (b[1].joinedAt || 0));
     const hostOnline = room.players[room.meta?.hostUid]?.online !== false && room.players[room.meta?.hostUid];
     const authorityUid = hostOnline ? room.meta.hostUid : online[0]?.[0] || null;

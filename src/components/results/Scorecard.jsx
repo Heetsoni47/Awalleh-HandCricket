@@ -15,7 +15,7 @@ const td = 'py-2.5 text-right font-mono tabular-nums text-[13px]';
 export default function Scorecard({ innings, names, teams, link = true }) {
   const name = (u) => names?.[u] || 'Player';
   const P = ({ u }) =>
-    link ? (
+    link && !String(u).startsWith('bot_') ? (
       <Link to={`/profile/${u}`} className="hover:text-accent transition-colors duration-150">
         {name(u)}
       </Link>

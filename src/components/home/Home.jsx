@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Plus, RotateCcw } from 'lucide-react';
+import { ArrowRight, Bot, Plus, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { createRoom } from '../../lib/rooms.js';
+import { createBotRoom, createRoom } from '../../lib/rooms.js';
 import { listMatchesFor } from '../../lib/matchSave.js';
 import { fmt1, fmtInt, hs, best } from '../../lib/stats.js';
 import { Button, Card, Input, SectionLabel, Stat, Empty } from '../ui.jsx';
@@ -22,11 +22,11 @@ export default function Home() {
     listMatchesFor(user.uid, 8).then(setRecent).catch(() => setRecent([]));
   }, [user.uid]);
 
-  async function create() {
+  async function create(vsBot = false) {
     setBusy(true);
     setError('');
     try {
-      const c = await createRoom(user);
+      const c = vsBot ? await createBotRoom(user) : await createRoom(user);
       nav(`/room/${c}`);
     } catch (e) {
       setError(e.message);
@@ -62,11 +62,17 @@ export default function Home() {
       <div className="mt-6 grid md:grid-cols-2 gap-4">
         <Card className="p-6 flex flex-col">
           <h2 className="text-[15px] font-medium">Host a room</h2>
-          <p className="mt-1 text-[13px] text-fg2">You pick team size, overs, innings format and series length</p>
-          <Button variant="accent" size="lg" className="mt-6 self-start" onClick={create} disabled={busy}>
-            <Plus size={18} strokeWidth={1.5} />
-            New room
-          </Button>
+          <p className="mt-1 text-[13px] text-fg2">You pick team size, overs, format and series. Add bots to fill empty spots</p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Button variant="accent" size="lg" onClick={() => create(false)} disabled={busy}>
+              <Plus size={18} strokeWidth={1.5} />
+              New room
+            </Button>
+            <Button size="lg" onClick={() => create(true)} disabled={busy}>
+              <Bot size={18} strokeWidth={1.5} />
+              Practice vs bot
+            </Button>
+          </div>
         </Card>
         <Card as="form" onSubmit={join} className="p-6 flex flex-col">
           <h2 className="text-[15px] font-medium">Join a room</h2>

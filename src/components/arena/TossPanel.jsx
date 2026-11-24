@@ -1,5 +1,5 @@
 import { gameTx } from '../../lib/rooms.js';
-import { tossCall, tossDecide, tossThrow } from '../../lib/engine.js';
+import { isBot, tossCall, tossDecide, tossThrow } from '../../lib/engine.js';
 import { Button, Card, TeamDot, Tile } from '../ui.jsx';
 import FingerPips from './FingerPips.jsx';
 
@@ -7,7 +7,7 @@ import FingerPips from './FingerPips.jsx';
 export default function TossPanel({ code, game, uid, isHost }) {
   const { toss, teams } = game;
   const capOf = (t) => teams[t].captain;
-  const canAct = (t) => capOf(t) === uid || isHost;
+  const canAct = (t) => !isBot(game, capOf(t)) && (capOf(t) === uid || isHost); // bots decide for themselves
   const name = (t) => teams[t].name;
   const act = (fn) => gameTx(code, fn);
 
