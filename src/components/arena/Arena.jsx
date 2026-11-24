@@ -85,7 +85,7 @@ export default function Arena() {
   const lb = game.lastBall;
   const revealing = lb && now - lb.at < REVEAL_MS;
   const counting = lb && now - lb.at < COUNTDOWN_MS;
-  const secondsLeft = game.phase === 'ball' && !revealing ? Math.max(0, Math.ceil(Math.min(10_000, game.deadline - now) / 1000)) : null;
+  const secondsLeft = game.phase === 'ball' && !counting ? Math.max(0, Math.ceil(Math.min(10_000, game.deadline - now) / 1000)) : null;
 
   const tickRef = useRef(null);
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function Arena() {
         {game.phase === 'setup' ? (
           <SetupPanel key={`${game.cur}-${inn.balls}`} code={code} game={game} uid={uid} isHost={isHost} />
         ) : !watching ? (
-          <HandPicker key={game.ballSeq} role={engine.role} disabled={!!revealing} picked={engine.myPick} onPick={engine.pick} secondsLeft={secondsLeft} />
+          <HandPicker key={game.ballSeq} role={engine.role} disabled={!!counting} picked={engine.myPick} onPick={engine.pick} secondsLeft={secondsLeft} />
         ) : (
           watchText && <p className="text-[13px] text-fg3">{watchText}</p>
         )}
